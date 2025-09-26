@@ -1,0 +1,22 @@
+{
+  "name": "slow-redact",
+  "version": "0.0.1",
+  "description": "Redact JS objects",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcollina/slow-redact.git"
+  },
+  "keywords": [
+    "redact"
+  ],
+  "author": "Matteo Collina <hello@matteocollina.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mcollina/slow-redact/issues"
+  },
+  "homepage": "https://github.com/mcollina/slow-redact#readme"
+}
