@@ -219,6 +219,68 @@ function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, original
   }
 }
 
+function selectiveClone (obj, pathsToClone) {
+  if (pathsToClone.length === 0) {
+    return obj // No paths to redact, return original
+  }
+
+  // Parse all paths and organize by depth
+  const pathStructure = new Map()
+  for (const path of pathsToClone) {
+    const parts = parsePath(path)
+    let current = pathStructure
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      if (!current.has(part)) {
+        current.set(part, new Map())
+      }
+      current = current.get(part)
+    }
+  }
+
+  function cloneSelectively (source, pathMap, depth = 0) {
+    if (!pathMap || pathMap.size === 0) {
+      return source // No more paths to clone, return reference
+    }
+
+    if (source === null || typeof source !== 'object') {
+      return source
+    }
+
+    if (source instanceof Date) {
+      return new Date(source.getTime())
+    }
+
+    if (Array.isArray(source)) {
+      const cloned = []
+      for (let i = 0; i < source.length; i++) {
+        const indexStr = i.toString()
+        if (pathMap.has(indexStr) || pathMap.has('*')) {
+          cloned[i] = cloneSelectively(source[i], pathMap.get(indexStr) || pathMap.get('*'))
+        } else {
+          cloned[i] = source[i] // Share reference for non-redacted items
+        }
+      }
+      return cloned
+    }
+
+    // Handle objects
+    const cloned = Object.create(Object.getPrototypeOf(source))
+    for (const key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        if (pathMap.has(key) || pathMap.has('*')) {
+          cloned[key] = cloneSelectively(source[key], pathMap.get(key) || pathMap.get('*'))
+        } else {
+          cloned[key] = source[key] // Share reference for non-redacted properties
+        }
+      }
+    }
+    return cloned
+  }
+
+  return cloneSelectively(obj, pathStructure)
+}
+
 function slowRedact (options = {}) {
   const {
     paths = [],
@@ -241,8 +303,9 @@ function slowRedact (options = {}) {
       }
     }
 
-    const cloned = deepClone(obj)
-    const original = deepClone(obj)
+    // Only clone paths that need redaction
+    const cloned = selectiveClone(obj, paths)
+    const original = obj // Keep reference to original for restore
 
     let actualCensor = censor
     if (typeof censor === 'function') {
@@ -253,7 +316,7 @@ function slowRedact (options = {}) {
 
     if (serialize === false) {
       cloned.restore = function () {
-        return deepClone(original)
+        return deepClone(original) // Full clone only when restore is called
       }
       return cloned
     }
