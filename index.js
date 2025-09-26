@@ -100,11 +100,13 @@ function setValue (obj, parts, value) {
       }
     } else if (typeof current === 'object' && current !== null) {
       for (const key in current) {
-        current[key] = value
+        if (Object.prototype.hasOwnProperty.call(current, key)) {
+          current[key] = value
+        }
       }
     }
   } else {
-    if (lastKey in current) {
+    if (lastKey in current && Object.prototype.hasOwnProperty.call(current, lastKey)) {
       current[lastKey] = value
     }
   }
