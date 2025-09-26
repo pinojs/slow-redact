@@ -336,6 +336,26 @@ test('path validation - unmatched brackets should throw', () => {
   })
 })
 
+test('path validation - comma-separated paths should throw', () => {
+  assert.throws(() => {
+    slowRedact({ paths: ['req,headers.cookie'] })
+  }, {
+    message: 'Invalid redaction path (req,headers.cookie)'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['user,profile,name'] })
+  }, {
+    message: 'Invalid redaction path (user,profile,name)'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['a,b'] })
+  }, {
+    message: 'Invalid redaction path (a,b)'
+  })
+})
+
 test('path validation - mixed valid and invalid should throw', () => {
   assert.throws(() => {
     slowRedact({ paths: ['valid.path', 123, 'another.valid'] })
@@ -347,6 +367,12 @@ test('path validation - mixed valid and invalid should throw', () => {
     slowRedact({ paths: ['valid.path', 'invalid..path'] })
   }, {
     message: 'Invalid redaction path (invalid..path)'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['valid.path', 'req,headers.cookie'] })
+  }, {
+    message: 'Invalid redaction path (req,headers.cookie)'
   })
 })
 
