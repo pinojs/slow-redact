@@ -143,22 +143,82 @@ const redact3 = slowRedact({ paths: ['items.*'] })
 - When you control the object lifecycle
 - In high-throughput logging scenarios
 
-## Benchmarks
+## Performance Benchmarks
 
-While slow-redact provides better safety guarantees, it comes with a performance cost:
+Comprehensive benchmarks comparing slow-redact with fast-redact show the performance trade-offs:
 
+### Performance Results
+
+| Operation Type | slow-redact | fast-redact | Performance Ratio |
+|---------------|-------------|-------------|-------------------|
+| **Small objects** | ~1.8μs | ~470ns | ~4x slower |
+| **Large objects** | ~135μs | ~90μs | ~1.5x slower |
+| **No redaction** | ~900ns | ~430ns | ~2x slower |
+
+### Key Performance Insights
+
+1. **Performance gap decreases with object size**: The cloning overhead becomes proportionally smaller for larger objects
+2. **Baseline overhead**: Even without redaction, slow-redact has ~2x overhead due to deep cloning
+3. **Memory usage**: slow-redact uses significantly more memory due to creating full object copies
+4. **Wildcard operations**: Performance difference is smaller for complex wildcard patterns
+
+### Benchmark Details
+
+**Small Objects (~180 bytes)**:
+- slow-redact: 1.8μs per operation
+- fast-redact: 470ns per operation
+- **4x performance difference**
+
+**Large Objects (~18KB)**:
+- slow-redact: 135μs per operation
+- fast-redact: 90μs per operation
+- **1.5x performance difference**
+
+**Memory Considerations**:
+- slow-redact: Creates full object copies (higher memory usage)
+- fast-redact: Mutates in-place (lower memory usage)
+
+### When Performance Matters
+
+Choose **fast-redact** when:
+- High-throughput scenarios (>10,000 ops/sec)
+- Memory-constrained environments
+- Processing large objects frequently
+- You control object lifecycle
+
+Choose **slow-redact** when:
+- Immutability is required
+- Objects are shared across contexts
+- Debugging and comparison needs
+- Safety is more important than speed
+
+Run benchmarks yourself:
+```bash
+npm run bench
 ```
-fast-redact: ~2,000,000 ops/sec
-slow-redact: ~100,000 ops/sec (20x slower)
-```
-
-The exact performance difference depends on object size and structure.
 
 ## Testing
 
 ```bash
+# Run unit tests
 npm test
+
+# Run integration tests comparing with fast-redact
+npm run test:integration
+
+# Run all tests (unit + integration)
+npm run test:all
+
+# Run benchmarks
+npm run bench
 ```
+
+### Test Coverage
+
+- **16 unit tests**: Core functionality and edge cases
+- **16 integration tests**: Output compatibility with fast-redact
+- **All major features**: Paths, wildcards, serialization, custom censors
+- **Performance benchmarks**: Direct comparison with fast-redact
 
 ## License
 
