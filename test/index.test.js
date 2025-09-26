@@ -171,7 +171,7 @@ test('censor function', () => {
   const obj = { secret: 'hidden' }
   const redact = slowRedact({
     paths: ['secret'],
-    censor: (value, path) => `REDACTED:${path}`
+    censor: (value, path) => `REDACTED:${path.join('.')}`
   })
   const result = redact(obj)
 
@@ -375,6 +375,137 @@ test('path validation - valid paths should work', () => {
   assert.doesNotThrow(() => {
     slowRedact({ paths: ['array[0]', 'object.property', 'wildcard.*'] })
   })
+})
+
+// fast-redact compatibility tests
+test('censor function receives path as array (fast-redact compatibility)', () => {
+  const obj = {
+    headers: {
+      authorization: 'Bearer token',
+      'x-api-key': 'secret-key'
+    }
+  }
+
+  const pathsReceived = []
+  const redact = slowRedact({
+    paths: ['headers.authorization', 'headers["x-api-key"]'],
+    censor: (value, path) => {
+      pathsReceived.push(path)
+      assert(Array.isArray(path), 'Path should be an array')
+      return '[REDACTED]'
+    }
+  })
+
+  redact(obj)
+
+  // Verify paths are arrays
+  assert.strictEqual(pathsReceived.length, 2)
+  assert.deepStrictEqual(pathsReceived[0], ['headers', 'authorization'])
+  assert.deepStrictEqual(pathsReceived[1], ['headers', 'x-api-key'])
+})
+
+test('censor function with nested paths receives correct array', () => {
+  const obj = {
+    user: {
+      profile: {
+        credentials: {
+          password: 'secret123'
+        }
+      }
+    }
+  }
+
+  let receivedPath
+  const redact = slowRedact({
+    paths: ['user.profile.credentials.password'],
+    censor: (value, path) => {
+      receivedPath = path
+      assert.strictEqual(value, 'secret123')
+      assert(Array.isArray(path))
+      return '[REDACTED]'
+    }
+  })
+
+  redact(obj)
+
+  assert.deepStrictEqual(receivedPath, ['user', 'profile', 'credentials', 'password'])
+})
+
+test('censor function with wildcards receives correct array paths', () => {
+  const obj = {
+    users: {
+      user1: { password: 'secret1' },
+      user2: { password: 'secret2' }
+    }
+  }
+
+  const pathsReceived = []
+  const redact = slowRedact({
+    paths: ['users.*.password'],
+    censor: (value, path) => {
+      pathsReceived.push([...path]) // copy the array
+      assert(Array.isArray(path))
+      return '[REDACTED]'
+    }
+  })
+
+  redact(obj)
+
+  assert.strictEqual(pathsReceived.length, 2)
+  assert.deepStrictEqual(pathsReceived[0], ['users', 'user1', 'password'])
+  assert.deepStrictEqual(pathsReceived[1], ['users', 'user2', 'password'])
+})
+
+test('censor function with array wildcard receives correct array paths', () => {
+  const obj = {
+    items: [
+      { secret: 'value1' },
+      { secret: 'value2' }
+    ]
+  }
+
+  const pathsReceived = []
+  const redact = slowRedact({
+    paths: ['items.*.secret'],
+    censor: (value, path) => {
+      pathsReceived.push([...path])
+      assert(Array.isArray(path))
+      return '[REDACTED]'
+    }
+  })
+
+  redact(obj)
+
+  assert.strictEqual(pathsReceived.length, 2)
+  assert.deepStrictEqual(pathsReceived[0], ['items', '0', 'secret'])
+  assert.deepStrictEqual(pathsReceived[1], ['items', '1', 'secret'])
+})
+
+test('censor function with end wildcard receives correct array paths', () => {
+  const obj = {
+    secrets: {
+      key1: 'secret1',
+      key2: 'secret2'
+    }
+  }
+
+  const pathsReceived = []
+  const redact = slowRedact({
+    paths: ['secrets.*'],
+    censor: (value, path) => {
+      pathsReceived.push([...path])
+      assert(Array.isArray(path))
+      return '[REDACTED]'
+    }
+  })
+
+  redact(obj)
+
+  assert.strictEqual(pathsReceived.length, 2)
+  // Sort paths for consistent testing since object iteration order isn't guaranteed
+  pathsReceived.sort((a, b) => a[1].localeCompare(b[1]))
+  assert.deepStrictEqual(pathsReceived[0], ['secrets', 'key1'])
+  assert.deepStrictEqual(pathsReceived[1], ['secrets', 'key2'])
 })
 
 test('type safety: accessing properties on primitive values should not throw', () => {
