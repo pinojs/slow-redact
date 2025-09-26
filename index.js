@@ -50,10 +50,9 @@ function parsePath (path) {
       }
       inBrackets = true
     } else if (char === ']' && inBrackets) {
-      if (current) {
-        parts.push(current)
-        current = ''
-      }
+      // Always push the current value when closing brackets, even if it's an empty string
+      parts.push(current)
+      current = ''
       inBrackets = false
       inQuotes = false
     } else if ((char === '"' || char === "'") && inBrackets) {

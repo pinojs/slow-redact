@@ -710,3 +710,43 @@ test('remove option: non-existent paths are ignored', () => {
   assert.strictEqual(parsed.existing, 'value')
   assert.strictEqual(parsed.nonexistent, undefined)
 })
+
+// Test for Issue #13: Empty string bracket notation paths not being redacted correctly
+test('empty string bracket notation path', () => {
+  const obj = { '': { c: 'sensitive-data' } }
+  const redact = slowRedact({ paths: ["[''].c"] })
+  const result = redact(obj)
+
+  // Original object should remain unchanged
+  assert.strictEqual(obj[''].c, 'sensitive-data')
+
+  // Result should have redacted path
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed[''].c, '[REDACTED]')
+})
+
+test('empty string bracket notation with double quotes', () => {
+  const obj = { '': { c: 'sensitive-data' } }
+  const redact = slowRedact({ paths: ['[""].c'] })
+  const result = redact(obj)
+
+  // Original object should remain unchanged
+  assert.strictEqual(obj[''].c, 'sensitive-data')
+
+  // Result should have redacted path
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed[''].c, '[REDACTED]')
+})
+
+test('empty string key with nested bracket notation', () => {
+  const obj = { '': { '': { secret: 'value' } } }
+  const redact = slowRedact({ paths: ["[''][''].secret"] })
+  const result = redact(obj)
+
+  // Original object should remain unchanged
+  assert.strictEqual(obj[''][''].secret, 'value')
+
+  // Result should have redacted path
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed[''][''].secret, '[REDACTED]')
+})
