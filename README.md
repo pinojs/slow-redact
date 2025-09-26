@@ -148,20 +148,20 @@ const redact3 = slowRedact({ paths: ['items.*'] })
 
 ## Performance Benchmarks
 
-After major optimizations, slow-redact now uses **selective cloning** that dramatically improves performance while maintaining immutability guarantees:
+slow-redact uses **selective cloning** that provides good performance while maintaining immutability guarantees:
 
 ### Performance Results
 
 | Operation Type | slow-redact | fast-redact | Performance Ratio |
 |---------------|-------------|-------------|-------------------|
-| **Small objects** | ~1.78μs | ~470ns | ~3.8x slower |
-| **Large objects (minimal redaction)** | **~41μs** | ~40μs | **~1.0x slower** |
-| **Large objects (wildcards)** | **~112μs** | ~85μs | **~1.3x slower** |
-| **No redaction (large objects)** | **~39μs** | ~39μs | **~1.0x slower** |
+| **Small objects** | ~690ns | ~200ns | ~3.5x slower |
+| **Large objects (minimal redaction)** | **~18μs** | ~17μs | **~same performance** |
+| **Large objects (wildcards)** | **~48μs** | ~37μs | **~1.3x slower** |
+| **No redaction (large objects)** | **~18μs** | ~17μs | **~same performance** |
 
-### Revolutionary Performance Improvements
+### Performance Improvements
 
-✨ **Major breakthrough**: slow-redact is now **performance-competitive** with fast-redact for large objects!
+slow-redact is performance-competitive with fast-redact for large objects.
 
 1. **Selective cloning approach**: Only clones object paths that need redaction
 2. **Reference sharing**: Non-redacted properties share original object references
@@ -171,24 +171,24 @@ After major optimizations, slow-redact now uses **selective cloning** that drama
 ### Benchmark Details
 
 **Small Objects (~180 bytes)**:
-- slow-redact: **1.78μs** per operation (vs 1.8μs baseline)
-- fast-redact: 470ns per operation
+- slow-redact: **690ns** per operation
+- fast-redact: **200ns** per operation
 - **Slight setup overhead for small objects**
 
 **Large Objects (~18KB, minimal redaction)**:
-- slow-redact: **41μs** per operation (vs 115μs baseline - **2.8x faster!**)
-- fast-redact: 40μs per operation
-- **Near-identical performance!**
+- slow-redact: **18μs** per operation
+- fast-redact: **17μs** per operation
+- Near-identical performance
 
 **Large Objects (~18KB, wildcard patterns)**:
-- slow-redact: **112μs** per operation (vs 135μs baseline - **1.2x faster**)
-- fast-redact: 85μs per operation
-- **Competitive performance for complex patterns**
+- slow-redact: **48μs** per operation
+- fast-redact: **37μs** per operation
+- Competitive performance for complex patterns
 
 **Memory Considerations**:
 - slow-redact: **Selective reference sharing** (much lower memory usage than before)
 - fast-redact: Mutates in-place (lowest memory usage)
-- **Game-changing improvement**: Large objects with few redacted paths now share most references
+- Large objects with few redacted paths now share most references
 
 ### When Performance Matters
 
@@ -199,12 +199,12 @@ Choose **fast-redact** when:
 - Every microsecond counts
 
 Choose **slow-redact** when:
-- Immutability is required (**now with competitive performance!**)
+- Immutability is required (with competitive performance)
 - Objects are shared across contexts
 - Large objects with selective redaction
 - Memory efficiency through reference sharing is important
 - Safety and functionality are priorities
-- **Most production applications** (performance gap is now minimal)
+- Most production applications (performance gap is minimal)
 
 Run benchmarks yourself:
 ```bash
