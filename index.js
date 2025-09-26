@@ -219,9 +219,9 @@ function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, original
   }
 }
 
-function selectiveClone (obj, pathsToClone) {
+function buildPathStructure (pathsToClone) {
   if (pathsToClone.length === 0) {
-    return obj // No paths to redact, return original
+    return null // No paths to redact
   }
 
   // Parse all paths and organize by depth
@@ -236,6 +236,13 @@ function selectiveClone (obj, pathsToClone) {
       }
       current = current.get(part)
     }
+  }
+  return pathStructure
+}
+
+function selectiveClone (obj, pathStructure) {
+  if (!pathStructure) {
+    return obj // No paths to redact, return original
   }
 
   function cloneSelectively (source, pathMap, depth = 0) {
@@ -293,6 +300,9 @@ function slowRedact (options = {}) {
     throw new TypeError('paths must be an array')
   }
 
+  // Build path structure once during setup, not on every call
+  const pathStructure = buildPathStructure(paths)
+
   return function redact (obj) {
     if (strict && (obj === null || typeof obj !== 'object')) {
       if (obj === null || obj === undefined) {
@@ -304,7 +314,7 @@ function slowRedact (options = {}) {
     }
 
     // Only clone paths that need redaction
-    const cloned = selectiveClone(obj, paths)
+    const cloned = selectiveClone(obj, pathStructure)
     const original = obj // Keep reference to original for restore
 
     let actualCensor = censor
