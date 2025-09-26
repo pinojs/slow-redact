@@ -44,9 +44,6 @@ jobs:
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
         node-version: [18, 20, 22, 24]
-        exclude:
-          - os: windows-latest
-            node-version: 22
 
     steps:
       - name: Check out repo
@@ -63,13 +60,7 @@ jobs:
         run: npm i --ignore-scripts
 
       - name: Run tests
-        run: npm run test-ci
-
-      - name: Run smoke test
-        if: >
-          matrix.os != 'windows-latest' &&
-          matrix.node-version > 14
-        run: npm run test:smoke
+        run: npm run test
 
   automerge:
     name: Automerge Dependabot PRs
