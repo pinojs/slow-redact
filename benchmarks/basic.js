@@ -1,5 +1,6 @@
 const { bench, group, run } = require('mitata')
 const slowRedact = require('../index.js')
+const fastRedact = require('fast-redact')
 
 // Test objects
 const smallObj = {
@@ -33,21 +34,33 @@ const largeObj = {
 }
 
 // Redaction configurations
-const basicRedact = slowRedact({
+const basicSlowRedact = slowRedact({
   paths: ['user.password', 'headers.cookie']
 })
 
-const wildcardRedact = slowRedact({
+const basicFastRedact = fastRedact({
+  paths: ['user.password', 'headers.cookie']
+})
+
+const wildcardSlowRedact = slowRedact({
   paths: ['users.*.password', 'users.*.profile.preferences.apiKey']
 })
 
-const deepRedact = slowRedact({
+const wildcardFastRedact = fastRedact({
+  paths: ['users.*.password', 'users.*.profile.preferences.apiKey']
+})
+
+const deepSlowRedact = slowRedact({
   paths: ['metadata.secret', 'metadata.database.password']
 })
 
-group('Small Object Redaction', () => {
+const deepFastRedact = fastRedact({
+  paths: ['metadata.secret', 'metadata.database.password']
+})
+
+group('Small Object Redaction - slow-redact', () => {
   bench('basic paths', () => {
-    basicRedact(smallObj)
+    basicSlowRedact(smallObj)
   })
 
   bench('serialize: false', () => {
@@ -67,13 +80,35 @@ group('Small Object Redaction', () => {
   })
 })
 
-group('Large Object Redaction', () => {
+group('Small Object Redaction - fast-redact', () => {
+  bench('basic paths', () => {
+    basicFastRedact(smallObj)
+  })
+
+  bench('serialize: false', () => {
+    const redact = fastRedact({
+      paths: ['user.password'],
+      serialize: false
+    })
+    redact(smallObj)
+  })
+
+  bench('custom censor function', () => {
+    const redact = fastRedact({
+      paths: ['user.password'],
+      censor: (value, path) => `HIDDEN:${path}`
+    })
+    redact(smallObj)
+  })
+})
+
+group('Large Object Redaction - slow-redact', () => {
   bench('wildcard patterns', () => {
-    wildcardRedact(largeObj)
+    wildcardSlowRedact(largeObj)
   })
 
   bench('deep nested paths', () => {
-    deepRedact(largeObj)
+    deepSlowRedact(largeObj)
   })
 
   bench('multiple wildcards', () => {
@@ -84,14 +119,59 @@ group('Large Object Redaction', () => {
   })
 })
 
+group('Large Object Redaction - fast-redact', () => {
+  bench('wildcard patterns', () => {
+    wildcardFastRedact(largeObj)
+  })
+
+  bench('deep nested paths', () => {
+    deepFastRedact(largeObj)
+  })
+
+  bench('multiple wildcards', () => {
+    const redact = fastRedact({
+      paths: ['users.*.password', 'users.*.profile.preferences.*']
+    })
+    redact(largeObj)
+  })
+})
+
+group('Direct Performance Comparison', () => {
+  bench('slow-redact - basic paths', () => {
+    basicSlowRedact(smallObj)
+  })
+
+  bench('fast-redact - basic paths', () => {
+    basicFastRedact(smallObj)
+  })
+
+  bench('slow-redact - wildcards', () => {
+    wildcardSlowRedact(largeObj)
+  })
+
+  bench('fast-redact - wildcards', () => {
+    wildcardFastRedact(largeObj)
+  })
+})
+
 group('Object Cloning Overhead', () => {
-  bench('deep clone small object', () => {
+  bench('slow-redact - no redaction (clone only)', () => {
     const redact = slowRedact({ paths: [] })
     redact(smallObj)
   })
 
-  bench('deep clone large object', () => {
+  bench('fast-redact - no redaction', () => {
+    const redact = fastRedact({ paths: [] })
+    redact(smallObj)
+  })
+
+  bench('slow-redact - large object clone', () => {
     const redact = slowRedact({ paths: [] })
+    redact(largeObj)
+  })
+
+  bench('fast-redact - large object', () => {
+    const redact = fastRedact({ paths: [] })
     redact(largeObj)
   })
 })
