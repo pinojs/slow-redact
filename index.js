@@ -83,7 +83,8 @@ function setValue (obj, parts, value) {
 
   for (let i = 0; i < parts.length - 1; i++) {
     const key = parts[i]
-    if (!(key in current)) {
+    // Type safety: Check if current is an object before using 'in' operator
+    if (typeof current !== 'object' || current === null || !(key in current)) {
       return false // Path doesn't exist, don't create it
     }
     if (typeof current[key] !== 'object' || current[key] === null) {
@@ -106,7 +107,8 @@ function setValue (obj, parts, value) {
       }
     }
   } else {
-    if (lastKey in current && Object.prototype.hasOwnProperty.call(current, lastKey)) {
+    // Type safety: Check if current is an object before using 'in' operator
+    if (typeof current === 'object' && current !== null && lastKey in current && Object.prototype.hasOwnProperty.call(current, lastKey)) {
       current[lastKey] = value
     }
   }
@@ -118,6 +120,10 @@ function getValue (obj, parts) {
 
   for (const part of parts) {
     if (current === null || current === undefined) {
+      return undefined
+    }
+    // Type safety: Check if current is an object before property access
+    if (typeof current !== 'object' || current === null) {
       return undefined
     }
     current = current[part]
@@ -150,6 +156,8 @@ function redactWildcardPath (obj, parts, censor, originalPath) {
 
     for (const part of parentParts) {
       if (current === null || current === undefined) return
+      // Type safety: Check if current is an object before property access
+      if (typeof current !== 'object' || current === null) return
       current = current[part]
     }
 
@@ -193,7 +201,8 @@ function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, original
       }
     } else if (pathLength < beforeWildcard.length) {
       const nextKey = beforeWildcard[pathLength]
-      if (current && typeof current === 'object' && nextKey in current) {
+      // Type safety: Check if current is an object before using 'in' operator
+      if (current && typeof current === 'object' && current !== null && nextKey in current) {
         pathArray[pathLength] = nextKey
         traverse(current[nextKey], pathLength + 1)
       }
@@ -212,6 +221,8 @@ function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, original
     for (let i = 0; i < beforeWildcard.length; i++) {
       const part = beforeWildcard[i]
       if (current === null || current === undefined) return
+      // Type safety: Check if current is an object before property access
+      if (typeof current !== 'object' || current === null) return
       current = current[part]
       pathArray[i] = part
     }
