@@ -8,7 +8,11 @@ function deepClone (obj) {
   }
 
   if (obj instanceof Array) {
-    return obj.map(item => deepClone(item))
+    const cloned = []
+    for (let i = 0; i < obj.length; i++) {
+      cloned[i] = deepClone(obj[i])
+    }
+    return cloned
   }
 
   if (typeof obj === 'object') {
@@ -170,41 +174,47 @@ function redactWildcardPath (obj, parts, censor, originalPath) {
 function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, originalPath) {
   const beforeWildcard = parts.slice(0, wildcardIndex)
   const afterWildcard = parts.slice(wildcardIndex + 1)
+  const pathArray = [] // Cached array to avoid allocations
 
-  function traverse (current, pathSoFar) {
-    if (pathSoFar.length === beforeWildcard.length) {
+  function traverse (current, pathLength) {
+    if (pathLength === beforeWildcard.length) {
       if (Array.isArray(current)) {
         for (let i = 0; i < current.length; i++) {
-          traverse(current[i], [...pathSoFar, i.toString()])
+          pathArray[pathLength] = i.toString()
+          traverse(current[i], pathLength + 1)
         }
       } else if (typeof current === 'object' && current !== null) {
         for (const key in current) {
-          traverse(current[key], [...pathSoFar, key])
+          pathArray[pathLength] = key
+          traverse(current[key], pathLength + 1)
         }
       }
-    } else if (pathSoFar.length < beforeWildcard.length) {
-      const nextKey = beforeWildcard[pathSoFar.length]
+    } else if (pathLength < beforeWildcard.length) {
+      const nextKey = beforeWildcard[pathLength]
       if (current && typeof current === 'object' && nextKey in current) {
-        traverse(current[nextKey], [...pathSoFar, nextKey])
+        pathArray[pathLength] = nextKey
+        traverse(current[nextKey], pathLength + 1)
       }
     } else {
       const actualCensor = typeof censor === 'function'
-        ? censor(getValue(current, afterWildcard), pathSoFar.join('.') + '.' + afterWildcard.join('.'))
+        ? censor(getValue(current, afterWildcard), pathArray.slice(0, pathLength).join('.') + '.' + afterWildcard.join('.'))
         : censor
       setValue(current, afterWildcard, actualCensor)
     }
   }
 
   if (beforeWildcard.length === 0) {
-    traverse(obj, [])
+    traverse(obj, 0)
   } else {
     let current = obj
-    for (const part of beforeWildcard) {
+    for (let i = 0; i < beforeWildcard.length; i++) {
+      const part = beforeWildcard[i]
       if (current === null || current === undefined) return
       current = current[part]
+      pathArray[i] = part
     }
     if (current !== null && current !== undefined) {
-      traverse(current, beforeWildcard)
+      traverse(current, beforeWildcard.length)
     }
   }
 }

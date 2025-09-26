@@ -9,7 +9,20 @@ const smallObj = {
 }
 
 const largeObj = {
-  users: Array.from({ length: 100 }, (_, i) => ({
+  users: [],
+  metadata: {
+    version: '1.0.0',
+    secret: 'app-secret-key',
+    database: {
+      host: 'localhost',
+      password: 'db-password'
+    }
+  }
+}
+
+// Populate users array with for loop instead of Array.from
+for (let i = 0; i < 100; i++) {
+  largeObj.users.push({
     id: i,
     name: `user${i}`,
     email: `user${i}@example.com`,
@@ -22,15 +35,7 @@ const largeObj = {
         apiKey: `key-${i}-secret`
       }
     }
-  })),
-  metadata: {
-    version: '1.0.0',
-    secret: 'app-secret-key',
-    database: {
-      host: 'localhost',
-      password: 'db-password'
-    }
-  }
+  })
 }
 
 // Redaction configurations
