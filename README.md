@@ -106,6 +106,19 @@ const redact = slowRedact({
 })
 ```
 
+**Remove keys instead of redacting:**
+```js
+const redact = slowRedact({
+  paths: ['password', 'user.secret'],
+  remove: true
+})
+
+const obj = { username: 'john', password: 'secret123', user: { name: 'Jane', secret: 'hidden' } }
+console.log(redact(obj))
+// Output: {"username":"john","user":{"name":"Jane"}}
+// Note: 'password' and 'user.secret' are completely absent, not redacted
+```
+
 **Wildcard patterns:**
 ```js
 // Redact all properties in secrets object
@@ -116,6 +129,9 @@ const redact2 = slowRedact({ paths: ['users.*.password'] })
 
 // Redact all items in an array
 const redact3 = slowRedact({ paths: ['items.*'] })
+
+// Remove all secrets instead of redacting them
+const redact4 = slowRedact({ paths: ['secrets.*'], remove: true })
 ```
 
 ## Key Differences from fast-redact
@@ -124,6 +140,12 @@ const redact3 = slowRedact({ paths: ['items.*'] })
 - **No mutation**: Original objects are never modified
 - **Selective cloning**: Only clones paths that need redaction, shares references for everything else
 - **Restore capability**: Can restore original values when `serialize: false`
+
+### Feature Compatibility
+- **Remove option**: Full compatibility with fast-redact's `remove: true` option to completely omit keys from output
+- **All path patterns**: Supports same syntax including wildcards, bracket notation, and array indices
+- **Censor functions**: Dynamic censoring with path information passed as arrays
+- **Serialization**: Custom serializers and `serialize: false` mode
 
 ### Smart Performance Approach
 - **Selective cloning**: Analyzes redaction paths and only clones necessary object branches
@@ -256,6 +278,45 @@ console.log(result.secrets === largeConfig.secrets)    // false - cloned for red
 ```
 
 This approach provides **immutability where it matters** while **sharing references where it's safe**.
+
+## Remove Option
+
+The `remove: true` option provides full compatibility with fast-redact's key removal functionality:
+
+```js
+const redact = slowRedact({
+  paths: ['password', 'secrets.*', 'users.*.credentials'],
+  remove: true
+})
+
+const data = {
+  username: 'john',
+  password: 'secret123',
+  secrets: { apiKey: 'abc', token: 'xyz' },
+  users: [
+    { name: 'Alice', credentials: { password: 'pass1' } },
+    { name: 'Bob', credentials: { password: 'pass2' } }
+  ]
+}
+
+console.log(redact(data))
+// Output: {"username":"john","secrets":{},"users":[{"name":"Alice"},{"name":"Bob"}]}
+```
+
+### Remove vs Redact Behavior
+
+| Option | Behavior | Output Example |
+|--------|----------|----------------|
+| Default (redact) | Replaces values with censor | `{"password":"[REDACTED]"}` |
+| `remove: true` | Completely omits keys | `{}` |
+
+### Compatibility Notes
+
+- **Same output as fast-redact**: Identical JSON output when using `remove: true`
+- **Wildcard support**: Works with all wildcard patterns (`*`, `users.*`, `items.*.secret`)
+- **Array handling**: Array items are set to `undefined` (omitted in JSON output)
+- **Nested paths**: Supports deep removal (`users.*.credentials.password`)
+- **Serialize compatibility**: Only works with `JSON.stringify` serializer (like fast-redact)
 
 ## Testing
 

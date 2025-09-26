@@ -115,6 +115,45 @@ function setValue (obj, parts, value) {
   return true
 }
 
+function removeKey (obj, parts) {
+  let current = obj
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    const key = parts[i]
+    // Type safety: Check if current is an object before using 'in' operator
+    if (typeof current !== 'object' || current === null || !(key in current)) {
+      return false // Path doesn't exist, don't create it
+    }
+    if (typeof current[key] !== 'object' || current[key] === null) {
+      return false // Path doesn't exist properly
+    }
+    current = current[key]
+  }
+
+  const lastKey = parts[parts.length - 1]
+  if (lastKey === '*') {
+    if (Array.isArray(current)) {
+      // For arrays, we can't really "remove" all items as that would change indices
+      // Instead, we set them to undefined which will be omitted by JSON.stringify
+      for (let i = 0; i < current.length; i++) {
+        current[i] = undefined
+      }
+    } else if (typeof current === 'object' && current !== null) {
+      for (const key in current) {
+        if (Object.prototype.hasOwnProperty.call(current, key)) {
+          delete current[key]
+        }
+      }
+    }
+  } else {
+    // Type safety: Check if current is an object before using 'in' operator
+    if (typeof current === 'object' && current !== null && lastKey in current && Object.prototype.hasOwnProperty.call(current, lastKey)) {
+      delete current[lastKey]
+    }
+  }
+  return true
+}
+
 function getValue (obj, parts) {
   let current = obj
 
@@ -132,22 +171,26 @@ function getValue (obj, parts) {
   return current
 }
 
-function redactPaths (obj, paths, censor) {
+function redactPaths (obj, paths, censor, remove = false) {
   for (const path of paths) {
     const parts = parsePath(path)
 
     if (parts.includes('*')) {
-      redactWildcardPath(obj, parts, censor, path)
+      redactWildcardPath(obj, parts, censor, path, remove)
     } else {
-      const actualCensor = typeof censor === 'function'
-        ? censor(getValue(obj, parts), parts)
-        : censor
-      setValue(obj, parts, actualCensor)
+      if (remove) {
+        removeKey(obj, parts)
+      } else {
+        const actualCensor = typeof censor === 'function'
+          ? censor(getValue(obj, parts), parts)
+          : censor
+        setValue(obj, parts, actualCensor)
+      }
     }
   }
 }
 
-function redactWildcardPath (obj, parts, censor, originalPath) {
+function redactWildcardPath (obj, parts, censor, originalPath, remove = false) {
   const wildcardIndex = parts.indexOf('*')
 
   if (wildcardIndex === parts.length - 1) {
@@ -162,28 +205,48 @@ function redactWildcardPath (obj, parts, censor, originalPath) {
     }
 
     if (Array.isArray(current)) {
-      for (let i = 0; i < current.length; i++) {
-        const indexPath = [...parentParts, i.toString()]
-        const actualCensor = typeof censor === 'function'
-          ? censor(current[i], indexPath)
-          : censor
-        current[i] = actualCensor
+      if (remove) {
+        // For arrays, set all items to undefined which will be omitted by JSON.stringify
+        for (let i = 0; i < current.length; i++) {
+          current[i] = undefined
+        }
+      } else {
+        for (let i = 0; i < current.length; i++) {
+          const indexPath = [...parentParts, i.toString()]
+          const actualCensor = typeof censor === 'function'
+            ? censor(current[i], indexPath)
+            : censor
+          current[i] = actualCensor
+        }
       }
     } else if (typeof current === 'object' && current !== null) {
-      for (const key in current) {
-        const keyPath = [...parentParts, key]
-        const actualCensor = typeof censor === 'function'
-          ? censor(current[key], keyPath)
-          : censor
-        current[key] = actualCensor
+      if (remove) {
+        // Collect keys to delete to avoid issues with deleting during iteration
+        const keysToDelete = []
+        for (const key in current) {
+          if (Object.prototype.hasOwnProperty.call(current, key)) {
+            keysToDelete.push(key)
+          }
+        }
+        for (const key of keysToDelete) {
+          delete current[key]
+        }
+      } else {
+        for (const key in current) {
+          const keyPath = [...parentParts, key]
+          const actualCensor = typeof censor === 'function'
+            ? censor(current[key], keyPath)
+            : censor
+          current[key] = actualCensor
+        }
       }
     }
   } else {
-    redactIntermediateWildcard(obj, parts, censor, wildcardIndex, originalPath)
+    redactIntermediateWildcard(obj, parts, censor, wildcardIndex, originalPath, remove)
   }
 }
 
-function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, originalPath) {
+function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, originalPath, remove = false) {
   const beforeWildcard = parts.slice(0, wildcardIndex)
   const afterWildcard = parts.slice(wildcardIndex + 1)
   const pathArray = [] // Cached array to avoid allocations
@@ -209,11 +272,15 @@ function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, original
         traverse(current[nextKey], pathLength + 1)
       }
     } else {
-      const fullPath = [...pathArray.slice(0, pathLength), ...afterWildcard]
-      const actualCensor = typeof censor === 'function'
-        ? censor(getValue(current, afterWildcard), fullPath)
-        : censor
-      setValue(current, afterWildcard, actualCensor)
+      if (remove) {
+        removeKey(current, afterWildcard)
+      } else {
+        const fullPath = [...pathArray.slice(0, pathLength), ...afterWildcard]
+        const actualCensor = typeof censor === 'function'
+          ? censor(getValue(current, afterWildcard), fullPath)
+          : censor
+        setValue(current, afterWildcard, actualCensor)
+      }
     }
   }
 
@@ -369,7 +436,8 @@ function slowRedact (options = {}) {
     paths = [],
     censor = '[REDACTED]',
     serialize = JSON.stringify,
-    strict = true
+    strict = true,
+    remove = false
   } = options
 
   // Validate paths upfront to match fast-redact behavior
@@ -397,7 +465,7 @@ function slowRedact (options = {}) {
       actualCensor = censor
     }
 
-    redactPaths(cloned, paths, actualCensor)
+    redactPaths(cloned, paths, actualCensor, remove)
 
     if (serialize === false) {
       cloned.restore = function () {

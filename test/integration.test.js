@@ -274,3 +274,117 @@ test('integration: complex object with mixed patterns', () => {
 
   assert.strictEqual(slowResult, fastResult)
 })
+
+// Remove option integration tests - comparing with fast-redact
+test('integration: remove option basic comparison with fast-redact', () => {
+  const obj = { username: 'john', password: 'secret123' }
+  const options = { paths: ['password'], remove: true }
+
+  const slowResult = slowRedact(options)(obj)
+  const fastResult = fastRedact(options)(obj)
+
+  assert.strictEqual(slowResult, fastResult)
+
+  // Verify the key is actually removed
+  const parsed = JSON.parse(slowResult)
+  assert.strictEqual(parsed.username, 'john')
+  assert.strictEqual('password' in parsed, false)
+})
+
+test('integration: remove option multiple paths comparison with fast-redact', () => {
+  const obj = {
+    user: { name: 'john', password: 'secret' },
+    session: { token: 'abc123', id: 'session1' }
+  }
+
+  const options = {
+    paths: ['user.password', 'session.token'],
+    remove: true
+  }
+
+  const slowResult = slowRedact(options)(obj)
+  const fastResult = fastRedact(options)(obj)
+
+  assert.strictEqual(slowResult, fastResult)
+})
+
+test('integration: remove option wildcard comparison with fast-redact', () => {
+  const obj = {
+    secrets: {
+      key1: 'secret1',
+      key2: 'secret2'
+    },
+    public: 'data'
+  }
+
+  const options = {
+    paths: ['secrets.*'],
+    remove: true
+  }
+
+  const slowResult = slowRedact(options)(obj)
+  const fastResult = fastRedact(options)(obj)
+
+  assert.strictEqual(slowResult, fastResult)
+})
+
+test('integration: remove option intermediate wildcard comparison with fast-redact', () => {
+  const obj = {
+    users: {
+      user1: { password: 'secret1', name: 'john' },
+      user2: { password: 'secret2', name: 'jane' }
+    }
+  }
+
+  const options = {
+    paths: ['users.*.password'],
+    remove: true
+  }
+
+  const slowResult = slowRedact(options)(obj)
+  const fastResult = fastRedact(options)(obj)
+
+  assert.strictEqual(slowResult, fastResult)
+})
+
+test('integration: remove option with custom censor comparison with fast-redact', () => {
+  const obj = { secret: 'hidden', public: 'data' }
+  const options = {
+    paths: ['secret'],
+    censor: '***',
+    remove: true
+  }
+
+  const slowResult = slowRedact(options)(obj)
+  const fastResult = fastRedact(options)(obj)
+
+  assert.strictEqual(slowResult, fastResult)
+
+  // With remove: true, censor value should be ignored
+  const parsed = JSON.parse(slowResult)
+  assert.strictEqual('secret' in parsed, false)
+  assert.strictEqual(parsed.public, 'data')
+})
+
+test('integration: remove option serialize false behavior - slow-redact only', () => {
+  // fast-redact doesn't support remove option with serialize: false
+  // so we test slow-redact's behavior only
+  const obj = { secret: 'hidden', public: 'data' }
+  const options = { paths: ['secret'], remove: true, serialize: false }
+
+  const result = slowRedact(options)(obj)
+
+  // Should have the key removed
+  assert.strictEqual('secret' in result, false)
+  assert.strictEqual(result.public, 'data')
+
+  // Should have restore method
+  assert.strictEqual(typeof result.restore, 'function')
+
+  // Original object should be preserved
+  assert.strictEqual(obj.secret, 'hidden')
+
+  // Restore should bring back the removed key
+  const restored = result.restore()
+  assert.strictEqual(restored.secret, 'hidden')
+})

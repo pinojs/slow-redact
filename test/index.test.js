@@ -577,3 +577,136 @@ test('type safety: accessing properties on primitive values should not throw', (
     assert.strictEqual(parsed3.user.name, 'John') // Should remain unchanged
   })
 })
+
+// Remove option tests
+test('remove option: basic key removal', () => {
+  const obj = { username: 'john', password: 'secret123' }
+  const redact = slowRedact({ paths: ['password'], remove: true })
+  const result = redact(obj)
+
+  // Original object should remain unchanged
+  assert.strictEqual(obj.password, 'secret123')
+
+  // Result should have password completely removed
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed.username, 'john')
+  assert.strictEqual('password' in parsed, false)
+  assert.strictEqual(parsed.password, undefined)
+})
+
+test('remove option: multiple paths removal', () => {
+  const obj = {
+    user: { name: 'john', password: 'secret' },
+    session: { token: 'abc123', id: 'session1' }
+  }
+
+  const redact = slowRedact({
+    paths: ['user.password', 'session.token'],
+    remove: true
+  })
+  const result = redact(obj)
+
+  // Original unchanged
+  assert.strictEqual(obj.user.password, 'secret')
+  assert.strictEqual(obj.session.token, 'abc123')
+
+  // Result has keys completely removed
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed.user.name, 'john')
+  assert.strictEqual(parsed.session.id, 'session1')
+  assert.strictEqual('password' in parsed.user, false)
+  assert.strictEqual('token' in parsed.session, false)
+})
+
+test('remove option: wildcard removal', () => {
+  const obj = {
+    secrets: {
+      key1: 'secret1',
+      key2: 'secret2'
+    },
+    public: 'data'
+  }
+
+  const redact = slowRedact({
+    paths: ['secrets.*'],
+    remove: true
+  })
+  const result = redact(obj)
+
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed.public, 'data')
+  assert.deepStrictEqual(parsed.secrets, {}) // All keys removed
+})
+
+test('remove option: array wildcard removal', () => {
+  const obj = {
+    items: ['secret1', 'secret2', 'secret3'],
+    meta: 'data'
+  }
+
+  const redact = slowRedact({
+    paths: ['items.*'],
+    remove: true
+  })
+  const result = redact(obj)
+
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed.meta, 'data')
+  // Array items set to undefined are omitted by JSON.stringify
+  assert.deepStrictEqual(parsed.items, [null, null, null])
+})
+
+test('remove option: intermediate wildcard removal', () => {
+  const obj = {
+    users: {
+      user1: { password: 'secret1', name: 'john' },
+      user2: { password: 'secret2', name: 'jane' }
+    }
+  }
+
+  const redact = slowRedact({
+    paths: ['users.*.password'],
+    remove: true
+  })
+  const result = redact(obj)
+
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed.users.user1.name, 'john')
+  assert.strictEqual(parsed.users.user2.name, 'jane')
+  assert.strictEqual('password' in parsed.users.user1, false)
+  assert.strictEqual('password' in parsed.users.user2, false)
+})
+
+test('remove option: serialize false returns object with removed keys', () => {
+  const obj = { secret: 'hidden', public: 'data' }
+  const redact = slowRedact({
+    paths: ['secret'],
+    remove: true,
+    serialize: false
+  })
+  const result = redact(obj)
+
+  // Should be object, not string
+  assert.strictEqual(typeof result, 'object')
+  assert.strictEqual(result.public, 'data')
+  assert.strictEqual('secret' in result, false)
+
+  // Should have restore method
+  assert.strictEqual(typeof result.restore, 'function')
+
+  const restored = result.restore()
+  assert.strictEqual(restored.secret, 'hidden')
+})
+
+test('remove option: non-existent paths are ignored', () => {
+  const obj = { existing: 'value' }
+  const redact = slowRedact({
+    paths: ['nonexistent.path'],
+    remove: true
+  })
+  const result = redact(obj)
+
+  const parsed = JSON.parse(result)
+  assert.strictEqual(parsed.existing, 'value')
+  assert.strictEqual(parsed.nonexistent, undefined)
+})
