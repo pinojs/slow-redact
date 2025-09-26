@@ -272,3 +272,107 @@ test('strict mode with primitives', () => {
   const numberResult = redact(42)
   assert.strictEqual(numberResult, '42')
 })
+
+// Path validation tests to match fast-redact behavior
+test('path validation - non-string paths should throw', () => {
+  assert.throws(() => {
+    slowRedact({ paths: [123] })
+  }, {
+    message: 'Paths must be (non-empty) strings'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: [null] })
+  }, {
+    message: 'Paths must be (non-empty) strings'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: [undefined] })
+  }, {
+    message: 'Paths must be (non-empty) strings'
+  })
+})
+
+test('path validation - empty string should throw', () => {
+  assert.throws(() => {
+    slowRedact({ paths: [''] })
+  }, {
+    message: 'Invalid redaction path ()'
+  })
+})
+
+test('path validation - double dots should throw', () => {
+  assert.throws(() => {
+    slowRedact({ paths: ['invalid..path'] })
+  }, {
+    message: 'Invalid redaction path (invalid..path)'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['a..b..c'] })
+  }, {
+    message: 'Invalid redaction path (a..b..c)'
+  })
+})
+
+test('path validation - unmatched brackets should throw', () => {
+  assert.throws(() => {
+    slowRedact({ paths: ['invalid[unclosed'] })
+  }, {
+    message: 'Invalid redaction path (invalid[unclosed)'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['invalid]unopened'] })
+  }, {
+    message: 'Invalid redaction path (invalid]unopened)'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['nested[a[b]'] })
+  }, {
+    message: 'Invalid redaction path (nested[a[b])'
+  })
+})
+
+test('path validation - mixed valid and invalid should throw', () => {
+  assert.throws(() => {
+    slowRedact({ paths: ['valid.path', 123, 'another.valid'] })
+  }, {
+    message: 'Paths must be (non-empty) strings'
+  })
+
+  assert.throws(() => {
+    slowRedact({ paths: ['valid.path', 'invalid..path'] })
+  }, {
+    message: 'Invalid redaction path (invalid..path)'
+  })
+})
+
+test('path validation - valid paths should work', () => {
+  // These should not throw
+  assert.doesNotThrow(() => {
+    slowRedact({ paths: [] })
+  })
+
+  assert.doesNotThrow(() => {
+    slowRedact({ paths: ['valid.path'] })
+  })
+
+  assert.doesNotThrow(() => {
+    slowRedact({ paths: ['user.password', 'data[0].secret'] })
+  })
+
+  assert.doesNotThrow(() => {
+    slowRedact({ paths: ['["quoted-key"].value'] })
+  })
+
+  assert.doesNotThrow(() => {
+    slowRedact({ paths: ["['single-quoted'].value"] })
+  })
+
+  assert.doesNotThrow(() => {
+    slowRedact({ paths: ['array[0]', 'object.property', 'wildcard.*'] })
+  })
+})

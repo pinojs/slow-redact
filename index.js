@@ -290,6 +290,61 @@ function selectiveClone (obj, pathStructure) {
   return cloneSelectively(obj, pathStructure)
 }
 
+function validatePath (path) {
+  if (typeof path !== 'string') {
+    throw new Error('Paths must be (non-empty) strings')
+  }
+
+  if (path === '') {
+    throw new Error('Invalid redaction path ()')
+  }
+
+  // Check for double dots
+  if (path.includes('..')) {
+    throw new Error(`Invalid redaction path (${path})`)
+  }
+
+  // Check for unmatched brackets
+  let bracketCount = 0
+  let inQuotes = false
+  let quoteChar = ''
+
+  for (let i = 0; i < path.length; i++) {
+    const char = path[i]
+
+    if ((char === '"' || char === "'") && bracketCount > 0) {
+      if (!inQuotes) {
+        inQuotes = true
+        quoteChar = char
+      } else if (char === quoteChar) {
+        inQuotes = false
+        quoteChar = ''
+      }
+    } else if (char === '[' && !inQuotes) {
+      bracketCount++
+    } else if (char === ']' && !inQuotes) {
+      bracketCount--
+      if (bracketCount < 0) {
+        throw new Error(`Invalid redaction path (${path})`)
+      }
+    }
+  }
+
+  if (bracketCount !== 0) {
+    throw new Error(`Invalid redaction path (${path})`)
+  }
+}
+
+function validatePaths (paths) {
+  if (!Array.isArray(paths)) {
+    throw new TypeError('paths must be an array')
+  }
+
+  for (const path of paths) {
+    validatePath(path)
+  }
+}
+
 function slowRedact (options = {}) {
   const {
     paths = [],
@@ -298,9 +353,8 @@ function slowRedact (options = {}) {
     strict = true
   } = options
 
-  if (!Array.isArray(paths)) {
-    throw new TypeError('paths must be an array')
-  }
+  // Validate paths upfront to match fast-redact behavior
+  validatePaths(paths)
 
   // Build path structure once during setup, not on every call
   const pathStructure = buildPathStructure(paths)
