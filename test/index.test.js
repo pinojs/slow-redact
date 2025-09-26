@@ -298,7 +298,7 @@ test('path validation - empty string should throw', () => {
   assert.throws(() => {
     slowRedact({ paths: [''] })
   }, {
-    message: 'Invalid path ()'
+    message: 'Invalid redaction path ()'
   })
 })
 
@@ -306,13 +306,13 @@ test('path validation - double dots should throw', () => {
   assert.throws(() => {
     slowRedact({ paths: ['invalid..path'] })
   }, {
-    message: 'Invalid path (invalid..path)'
+    message: 'Invalid redaction path (invalid..path)'
   })
 
   assert.throws(() => {
     slowRedact({ paths: ['a..b..c'] })
   }, {
-    message: 'Invalid path (a..b..c)'
+    message: 'Invalid redaction path (a..b..c)'
   })
 })
 
@@ -320,19 +320,19 @@ test('path validation - unmatched brackets should throw', () => {
   assert.throws(() => {
     slowRedact({ paths: ['invalid[unclosed'] })
   }, {
-    message: 'Invalid path (invalid[unclosed)'
+    message: 'Invalid redaction path (invalid[unclosed)'
   })
 
   assert.throws(() => {
     slowRedact({ paths: ['invalid]unopened'] })
   }, {
-    message: 'Invalid path (invalid]unopened)'
+    message: 'Invalid redaction path (invalid]unopened)'
   })
 
   assert.throws(() => {
     slowRedact({ paths: ['nested[a[b]'] })
   }, {
-    message: 'Invalid path (nested[a[b])'
+    message: 'Invalid redaction path (nested[a[b])'
   })
 })
 
@@ -346,7 +346,7 @@ test('path validation - mixed valid and invalid should throw', () => {
   assert.throws(() => {
     slowRedact({ paths: ['valid.path', 'invalid..path'] })
   }, {
-    message: 'Invalid path (invalid..path)'
+    message: 'Invalid redaction path (invalid..path)'
   })
 })
 

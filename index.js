@@ -296,12 +296,12 @@ function validatePath (path) {
   }
 
   if (path === '') {
-    throw new Error('Invalid path ()')
+    throw new Error('Invalid redaction path ()')
   }
 
   // Check for double dots
   if (path.includes('..')) {
-    throw new Error(`Invalid path (${path})`)
+    throw new Error(`Invalid redaction path (${path})`)
   }
 
   // Check for unmatched brackets
@@ -325,13 +325,13 @@ function validatePath (path) {
     } else if (char === ']' && !inQuotes) {
       bracketCount--
       if (bracketCount < 0) {
-        throw new Error(`Invalid path (${path})`)
+        throw new Error(`Invalid redaction path (${path})`)
       }
     }
   }
 
   if (bracketCount !== 0) {
-    throw new Error(`Invalid path (${path})`)
+    throw new Error(`Invalid redaction path (${path})`)
   }
 }
 
