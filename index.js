@@ -318,6 +318,11 @@ function validatePath (path) {
     throw new Error(`Invalid redaction path (${path})`)
   }
 
+  // Check for comma-separated paths (invalid syntax)
+  if (path.includes(',')) {
+    throw new Error(`Invalid redaction path (${path})`)
+  }
+
   // Check for unmatched brackets
   let bracketCount = 0
   let inQuotes = false
