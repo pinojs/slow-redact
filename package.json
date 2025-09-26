@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcollina/slow-redact.git"
+    "url": "git+https://github.com/pinojs/slow-redact.git"
   },
   "keywords": [
     "redact"
@@ -21,9 +21,9 @@
   "author": "Matteo Collina <hello@matteocollina.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mcollina/slow-redact/issues"
+    "url": "https://github.com/pinojs/slow-redact/issues"
   },
-  "homepage": "https://github.com/mcollina/slow-redact#readme",
+  "homepage": "https://github.com/pinojs/slow-redact#readme",
   "devDependencies": {
     "eslint": "^9.36.0",
     "fast-redact": "^3.5.0",
