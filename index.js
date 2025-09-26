@@ -140,7 +140,7 @@ function redactPaths (obj, paths, censor) {
       redactWildcardPath(obj, parts, censor, path)
     } else {
       const actualCensor = typeof censor === 'function'
-        ? censor(getValue(obj, parts), path)
+        ? censor(getValue(obj, parts), parts)
         : censor
       setValue(obj, parts, actualCensor)
     }
@@ -163,15 +163,17 @@ function redactWildcardPath (obj, parts, censor, originalPath) {
 
     if (Array.isArray(current)) {
       for (let i = 0; i < current.length; i++) {
+        const indexPath = [...parentParts, i.toString()]
         const actualCensor = typeof censor === 'function'
-          ? censor(current[i], `${originalPath.replace('*', i)}`)
+          ? censor(current[i], indexPath)
           : censor
         current[i] = actualCensor
       }
     } else if (typeof current === 'object' && current !== null) {
       for (const key in current) {
+        const keyPath = [...parentParts, key]
         const actualCensor = typeof censor === 'function'
-          ? censor(current[key], `${originalPath.replace('*', key)}`)
+          ? censor(current[key], keyPath)
           : censor
         current[key] = actualCensor
       }
@@ -207,8 +209,9 @@ function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, original
         traverse(current[nextKey], pathLength + 1)
       }
     } else {
+      const fullPath = [...pathArray.slice(0, pathLength), ...afterWildcard]
       const actualCensor = typeof censor === 'function'
-        ? censor(getValue(current, afterWildcard), pathArray.slice(0, pathLength).join('.') + '.' + afterWildcard.join('.'))
+        ? censor(getValue(current, afterWildcard), fullPath)
         : censor
       setValue(current, afterWildcard, actualCensor)
     }
