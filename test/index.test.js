@@ -376,3 +376,47 @@ test('path validation - valid paths should work', () => {
     slowRedact({ paths: ['array[0]', 'object.property', 'wildcard.*'] })
   })
 })
+
+test('type safety: accessing properties on primitive values should not throw', () => {
+  // Test case from GitHub issue #5
+  const redactor = slowRedact({ paths: ['headers.authorization'] })
+  const data = {
+    headers: 123 // primitive value
+  }
+
+  assert.doesNotThrow(() => {
+    const result = redactor(data)
+    const parsed = JSON.parse(result)
+    assert.strictEqual(parsed.headers, 123) // Should remain unchanged
+  })
+
+  // Test wildcards with primitives
+  const redactor2 = slowRedact({ paths: ['data.*.nested'] })
+  const data2 = {
+    data: {
+      item1: 123, // primitive, trying to access .nested on it
+      item2: { nested: 'secret' }
+    }
+  }
+
+  assert.doesNotThrow(() => {
+    const result2 = redactor2(data2)
+    const parsed2 = JSON.parse(result2)
+    assert.strictEqual(parsed2.data.item1, 123) // Primitive unchanged
+    assert.strictEqual(parsed2.data.item2.nested, '[REDACTED]') // Object property redacted
+  })
+
+  // Test deep nested access on primitives
+  const redactor3 = slowRedact({ paths: ['user.name.first.charAt'] })
+  const data3 = {
+    user: {
+      name: 'John' // string primitive
+    }
+  }
+
+  assert.doesNotThrow(() => {
+    const result3 = redactor3(data3)
+    const parsed3 = JSON.parse(result3)
+    assert.strictEqual(parsed3.user.name, 'John') // Should remain unchanged
+  })
+})
