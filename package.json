@@ -1,6 +1,6 @@
 {
   "name": "slow-redact",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Redact JS objects",
   "main": "index.js",
   "scripts": {
