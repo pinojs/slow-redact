@@ -1,4 +1,4 @@
-function deepClone(obj) {
+function deepClone (obj) {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
@@ -14,7 +14,7 @@ function deepClone(obj) {
   if (typeof obj === 'object') {
     const cloned = Object.create(Object.getPrototypeOf(obj))
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         cloned[key] = deepClone(obj[key])
       }
     }
@@ -24,7 +24,7 @@ function deepClone(obj) {
   return obj
 }
 
-function parsePath(path) {
+function parsePath (path) {
   const parts = []
   let current = ''
   let inBrackets = false
@@ -74,7 +74,7 @@ function parsePath(path) {
   return parts
 }
 
-function setValue(obj, parts, value) {
+function setValue (obj, parts, value) {
   let current = obj
 
   for (let i = 0; i < parts.length - 1; i++) {
@@ -107,7 +107,7 @@ function setValue(obj, parts, value) {
   return true
 }
 
-function getValue(obj, parts) {
+function getValue (obj, parts) {
   let current = obj
 
   for (const part of parts) {
@@ -120,7 +120,7 @@ function getValue(obj, parts) {
   return current
 }
 
-function redactPaths(obj, paths, censor) {
+function redactPaths (obj, paths, censor) {
   for (const path of paths) {
     const parts = parsePath(path)
 
@@ -135,7 +135,7 @@ function redactPaths(obj, paths, censor) {
   }
 }
 
-function redactWildcardPath(obj, parts, censor, originalPath) {
+function redactWildcardPath (obj, parts, censor, originalPath) {
   const wildcardIndex = parts.indexOf('*')
 
   if (wildcardIndex === parts.length - 1) {
@@ -167,11 +167,11 @@ function redactWildcardPath(obj, parts, censor, originalPath) {
   }
 }
 
-function redactIntermediateWildcard(obj, parts, censor, wildcardIndex, originalPath) {
+function redactIntermediateWildcard (obj, parts, censor, wildcardIndex, originalPath) {
   const beforeWildcard = parts.slice(0, wildcardIndex)
   const afterWildcard = parts.slice(wildcardIndex + 1)
 
-  function traverse(current, pathSoFar) {
+  function traverse (current, pathSoFar) {
     if (pathSoFar.length === beforeWildcard.length) {
       if (Array.isArray(current)) {
         for (let i = 0; i < current.length; i++) {
@@ -209,12 +209,11 @@ function redactIntermediateWildcard(obj, parts, censor, wildcardIndex, originalP
   }
 }
 
-function slowRedact(options = {}) {
+function slowRedact (options = {}) {
   const {
     paths = [],
     censor = '[REDACTED]',
     serialize = JSON.stringify,
-    remove = false,
     strict = true
   } = options
 
@@ -222,7 +221,7 @@ function slowRedact(options = {}) {
     throw new TypeError('paths must be an array')
   }
 
-  return function redact(obj) {
+  return function redact (obj) {
     if (strict && (obj === null || typeof obj !== 'object')) {
       if (obj === null || obj === undefined) {
         return serialize ? serialize(obj) : obj
@@ -243,7 +242,7 @@ function slowRedact(options = {}) {
     redactPaths(cloned, paths, actualCensor)
 
     if (serialize === false) {
-      cloned.restore = function() {
+      cloned.restore = function () {
         return deepClone(original)
       }
       return cloned
