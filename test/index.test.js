@@ -750,3 +750,75 @@ test('empty string key with nested bracket notation', () => {
   const parsed = JSON.parse(result)
   assert.strictEqual(parsed[''][''].secret, '[REDACTED]')
 })
+
+// Test for Pino issue #2313: censor should only be called when path exists
+test('censor function not called for non-existent paths', () => {
+  let censorCallCount = 0
+  const censorCalls = []
+
+  const redact = slowRedact({
+    paths: ['a.b.c', 'req.authorization', 'url'],
+    serialize: false,
+    censor (value, path) {
+      censorCallCount++
+      censorCalls.push({ value, path: path.slice() })
+      return '***'
+    }
+  })
+
+  // Test case 1: { req: { id: 'test' } }
+  // req.authorization doesn't exist, censor should not be called for it
+  censorCallCount = 0
+  censorCalls.length = 0
+  redact({ req: { id: 'test' } })
+
+  // Should not have been called for any path since none exist
+  assert.strictEqual(censorCallCount, 0, 'censor should not be called when paths do not exist')
+
+  // Test case 2: { a: { d: 'test' } }
+  // a.b.c doesn't exist (a.d exists, but not a.b.c)
+  censorCallCount = 0
+  redact({ a: { d: 'test' } })
+  assert.strictEqual(censorCallCount, 0)
+
+  // Test case 3: paths that do exist should still call censor
+  censorCallCount = 0
+  censorCalls.length = 0
+  const result = redact({ req: { authorization: 'bearer token' } })
+  assert.strictEqual(censorCallCount, 1, 'censor should be called when path exists')
+  assert.deepStrictEqual(censorCalls[0].path, ['req', 'authorization'])
+  assert.strictEqual(censorCalls[0].value, 'bearer token')
+  assert.strictEqual(result.req.authorization, '***')
+})
+
+test('censor function not called for non-existent nested paths', () => {
+  let censorCallCount = 0
+
+  const redact = slowRedact({
+    paths: ['headers.authorization'],
+    serialize: false,
+    censor (value, path) {
+      censorCallCount++
+      return '[REDACTED]'
+    }
+  })
+
+  // headers exists but authorization doesn't
+  censorCallCount = 0
+  const result1 = redact({ headers: { 'content-type': 'application/json' } })
+  assert.strictEqual(censorCallCount, 0)
+  assert.deepStrictEqual(result1.headers, { 'content-type': 'application/json' })
+
+  // headers doesn't exist at all
+  censorCallCount = 0
+  const result2 = redact({ body: 'data' })
+  assert.strictEqual(censorCallCount, 0)
+  assert.strictEqual(result2.body, 'data')
+  assert.strictEqual(typeof result2.restore, 'function')
+
+  // headers.authorization exists - should call censor
+  censorCallCount = 0
+  const result3 = redact({ headers: { authorization: 'Bearer token' } })
+  assert.strictEqual(censorCallCount, 1)
+  assert.strictEqual(result3.headers.authorization, '[REDACTED]')
+})
