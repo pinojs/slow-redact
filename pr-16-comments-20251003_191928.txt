@@ -1,0 +1,133 @@
+GitHub PR #16 - Complete Comment Export
+Generated on: Fri Oct  3 07:19:30 PM CEST 2025
+Repository: pinojs/slow-redact
+
+PR Information:
+===============
+PR Number: #16
+Title: feat: export types
+State: OPEN
+Author: samchungy
+Created: 2025-09-29T22:49:31Z
+Updated: 2025-10-03T10:13:51Z
+URL: https://github.com/pinojs/slow-redact/pull/16
+Base Branch: main
+Head Branch: ship-types
+Mergeable: MERGEABLE
+Additions: 100
+Deletions: 3
+Changed Files: 4
+
+
+========================================
+GENERAL PR COMMENTS (Issue Comments)
+========================================
+
+No general PR comments found.
+
+========================================
+REVIEW COMMENTS (Inline Code Comments)
+========================================
+
+---
+Comment ID: 2401446382
+Author: mcollina
+Created: 2025-10-03T10:12:47Z
+Updated: 2025-10-03T10:13:51Z
+File: package.json
+Line: 40
+Position: 26
+Diff Hunk: @@ -28,6 +34,8 @@
+     "eslint": "^9.36.0",
+     "fast-redact": "^3.5.0",
+     "mitata": "^1.0.34",
+-    "neostandard": "^0.12.2"
+-  }
++    "neostandard": "^0.12.2",
++    "typescript": "^5.9.2"
++  },
++  "packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d455cbf92e5cf4b39d34985d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a"
+In Reply To: N/A
+
+Content:
+Please remove this
+
+---
+Comment ID: 2401447833
+Author: mcollina
+Created: 2025-10-03T10:13:36Z
+Updated: 2025-10-03T10:13:51Z
+File: package.json
+Line: 10
+Position: 8
+Diff Hunk: @@ -3,9 +3,15 @@
+   "version": "0.3.0",
+   "description": "Redact JS objects",
+   "main": "index.js",
++  "types": "index.d.ts",
++  "files": [
++    "index.js",
++    "index.d.ts"
++  ],
+In Reply To: N/A
+
+Content:
+Please remove this. See https://www.youtube.com/watch?v=D18jlN2JNE0&t=11s
+
+
+========================================
+PR REVIEWS (Summaries & Approvals)
+========================================
+
+---
+Review ID: 3298343906
+Author: mcollina
+State: COMMENTED
+Submitted: 2025-10-03T10:13:51Z
+Commit SHA: 7c9eafde8e153fd57aa9af455a3e7ed63314ce6d
+
+Review Body:
+Thanks, this is great! I've left a couple of comments.
+
+
+========================================
+REVIEW REQUESTS
+========================================
+
+No pending review requests.
+
+========================================
+PR TIMELINE EVENTS
+========================================
+
+---
+Event: committed
+Actor: N/A
+Created: N/A
+Commit: 7c9eafde8e153fd57aa9af455a3e7ed63314ce6d
+
+---
+Event: subscribed
+Actor: mrazauskas
+Created: 2025-09-30T06:12:49Z
+
+---
+Event: reviewed
+Actor: N/A
+Created: N/A
+Review State: commented
+Message: Thanks, this is great! I've left a couple of comments.
+
+
+========================================
+SUMMARY STATISTICS
+========================================
+Generated on: Fri Oct  3 07:19:35 PM CEST 2025
+PR Number: #16
+
+Comment Breakdown:
+- General PR Comments: 0
+- Review Comments (Code): 2
+- PR Reviews: 1
+- Total Comments: 3
+

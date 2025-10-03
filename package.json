@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node --test && npm run test:types",
     "test:integration": "node --test test/integration.test.js",
-    "test:types": "tsc --noEmit",
+    "test:types": "tsd",
     "test:all": "node --test test/*.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -31,6 +31,7 @@
     "fast-redact": "^3.5.0",
     "mitata": "^1.0.34",
     "neostandard": "^0.12.2",
+    "tsd": "^0.33.0",
     "typescript": "^5.9.2"
   }
 }
