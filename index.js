@@ -153,6 +153,30 @@ function removeKey (obj, parts) {
   return true
 }
 
+// Sentinel object to distinguish between undefined value and non-existent path
+const PATH_NOT_FOUND = Symbol('PATH_NOT_FOUND')
+
+function getValueIfExists (obj, parts) {
+  let current = obj
+
+  for (const part of parts) {
+    if (current === null || current === undefined) {
+      return PATH_NOT_FOUND
+    }
+    // Type safety: Check if current is an object before property access
+    if (typeof current !== 'object' || current === null) {
+      return PATH_NOT_FOUND
+    }
+    // Check if the property exists before accessing it
+    if (!(part in current)) {
+      return PATH_NOT_FOUND
+    }
+    current = current[part]
+  }
+
+  return current
+}
+
 function getValue (obj, parts) {
   let current = obj
 
@@ -180,8 +204,14 @@ function redactPaths (obj, paths, censor, remove = false) {
       if (remove) {
         removeKey(obj, parts)
       } else {
+        // Get value only if path exists - single traversal
+        const value = getValueIfExists(obj, parts)
+        if (value === PATH_NOT_FOUND) {
+          continue
+        }
+
         const actualCensor = typeof censor === 'function'
-          ? censor(getValue(obj, parts), parts)
+          ? censor(value, parts)
           : censor
         setValue(obj, parts, actualCensor)
       }
